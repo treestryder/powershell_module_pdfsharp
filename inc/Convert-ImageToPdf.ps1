@@ -35,11 +35,19 @@ function Convert-ImageToPdf {
                 continue
             }
             Write-Verbose "    Adding image $image"
-            $ximage = [PdfSharp.Drawing.XImage]::FromFile($image)
-            $page = $PdfDocument.Pages.Add()
-            $xgraphics  = [PdfSharp.Drawing.XGraphics]::FromPdfPage($page)
-            $xgraphics.DrawImage($ximage,0,0)
-            $ximage.Dispose()
+            $ximage = $null
+            try {
+                $xgraphics  = [PdfSharp.Drawing.XGraphics]::FromPdfPage($PdfDocument.Pages.Add())
+                $ximage = [PdfSharp.Drawing.XImage]::FromFile($image)
+                $xgraphics.DrawImage($ximage,0,0)
+                $ximage.Dispose()
+            }
+            catch {
+                if ($ximage -ne $null) { $ximage.Dispose() }
+                $pdfDocument.Close()
+                $PdfDocument.Dispose()
+                throw ('Failed to add image {0}: {1}' -f $image, $_.ToString())
+            }
         }
     }
 
@@ -49,7 +57,7 @@ function Convert-ImageToPdf {
             $pdfDocument.Save($Path)
             $pdfDocument.Close()
         } else {
-            Write-Warning "    PDF $Path was not created as there no valid pages."
+            Write-Warning "    PDF $Path was not created as there were no valid pages."
         }
 
         $PdfDocument.Dispose()
