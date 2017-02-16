@@ -25,7 +25,7 @@ function Convert-ImageToPdf {
     begin {
         Write-Verbose "Creating PDF $Path"
         $PdfDocument = New-Object PdfSharp.Pdf.PdfDocument
-        $PdfDocument = Set-PdfProperties -PdfDocument $PdfDocument -Title:$Title -Author:$Author -Subject:$Subject -CreationDate:$CreationDate -UserPassword:$UserPassword -OwnerPassword:$OwnerPassword -CustomProperties:$CustomProperties
+        $PdfDocument = Set-PdfProperty -PdfDocument $PdfDocument -Title:$Title -Author:$Author -Subject:$Subject -CreationDate:$CreationDate -UserPassword:$UserPassword -OwnerPassword:$OwnerPassword -CustomProperties:$CustomProperties
     }
 
     process {

@@ -2,7 +2,7 @@
 .Synopsis
     Uses the PDFSharp framework to set properties on a PDF document.
 #>
-function Set-PdfProperties {
+function Set-PdfProperty {
     [CmdletBinding()]
         param (
         [Parameter(

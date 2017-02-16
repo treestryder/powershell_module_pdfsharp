@@ -10,7 +10,9 @@ function Get-Pdf {
             ValueFromPipeline=$true,
             ValueFromPipelineByPropertyName=$true
         )]
-        [object[]]$Path
+        [object[]]$Path,
+        [string]$UserPassword,
+		[string]$OwnerPassword
     )
 
     process {
@@ -21,8 +23,17 @@ function Get-Pdf {
                 Write-Warning "File not found or not a valid PDF: $p"
                 continue
             }
-            Write-Verbose $p
-            [PdfSharp.Pdf.IO.PdfReader]::Open($p);
+            Write-Verbose "Get-Pdf $p"
+          
+            if (-not [string]::IsNullOrWhiteSpace($OwnerPassword)) {
+                [PdfSharp.Pdf.IO.PdfReader]::Open($Path, $OwnerPassword)
+            }
+            elseif (-not [string]::IsNullOrWhiteSpace($UserPassword)) {
+                [PdfSharp.Pdf.IO.PdfReader]::Open($Path, $UserPassword)
+            }
+            else {
+                [PdfSharp.Pdf.IO.PdfReader]::Open($Path)
+            }
         }
     }
 }
