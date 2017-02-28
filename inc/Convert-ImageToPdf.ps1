@@ -9,9 +9,9 @@ function Convert-ImageToPdf {
         [Parameter(Mandatory=$true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string[]]$ImagePath,
+        [string[]]$Path,
         [Parameter(Mandatory=$true)]
-        [string]$Path,
+        [string]$Destination,
         [string]$Title,
         [string]$Author,
         [string]$Subject,
@@ -23,37 +23,60 @@ function Convert-ImageToPdf {
     )
 
     begin {
+        Add-Type -AssemblyName System.Drawing
         $PdfDocument = $null
-        if (Test-Path $Path -and -not $Force) {
-            Write-Verbose "Appending PDF $Path"
-            $PdfDocument = Get-Pdf -Path $Path
+        if ((Test-Path $Destination) -and -not $Force) {
+            Write-Verbose "Appending PDF $Destination"
+            $PdfDocument = Get-Pdf -Path $Destination
         }
         else {
-            Write-Verbose "Creating PDF $Path"
+            Write-Verbose "Creating PDF $Destination"
             $PdfDocument = New-Object PdfSharp.Pdf.PdfDocument
         }
         $PdfDocument = Set-PdfProperty -PdfDocument $PdfDocument -Title:$Title -Author:$Author -Subject:$Subject -CreationDate:$CreationDate -UserPassword:$UserPassword -OwnerPassword:$OwnerPassword -CustomProperties:$CustomProperties
     }
 
     process {
-        foreach ($image in $ImagePath) {
+        foreach ($image in $Path) {
             if (-not (Test-Path $image)) {
                 Write-Warning "Image file not found $image"
                 continue
             }
-            Write-Verbose "    Adding $image"
+            
             $ximage = $null
+
+
+            $original = $null
+            $xgraphics = $null
+            $ximage = $null
+            $ms = $null
             try {
-                $xgraphics  = [PdfSharp.Drawing.XGraphics]::FromPdfPage($PdfDocument.Pages.Add())
-                $ximage = [PdfSharp.Drawing.XImage]::FromFile($image)
-                $xgraphics.DrawImage($ximage,0,0)
-                $ximage.Dispose()
+                $original = New-Object System.Drawing.Bitmap -ArgumentList $image -ErrorAction Stop
+                $frameCount = $original.GetFrameCount([System.Drawing.Imaging.FrameDimension]::Page)
+                for ($i = 0; $i -lt $frameCount; $i++) {
+                    Write-Verbose "    Adding image: $image frame: $i"
+                    $null = $original.SelectActiveFrame([System.Drawing.Imaging.FrameDimension]::Page, $i)
+                    $ms = New-Object System.IO.MemoryStream
+                    $original.Save( $ms, $original.RawFormat)
+                    $ximage = [PdfSharp.Drawing.XImage]::FromStream($ms)
+                    $xgraphics  = [PdfSharp.Drawing.XGraphics]::FromPdfPage($PdfDocument.Pages.Add())
+                    $xgraphics.DrawImage($ximage,0,0)
+                    $xgraphics.Dispose()
+                    $ximage.Dispose()
+                    $ms.Dispose()
+                }
+                $original.Dispose()
             }
             catch {
-                if ($ximage -ne $null) { $ximage.Dispose() }
                 $pdfDocument.Close()
                 $PdfDocument.Dispose()
                 throw ('Failed to add image {0}: {1}' -f $image, $_.ToString())
+            }
+            finally {
+                if ($xgraphics -ne $null) { $xgraphics.Dispose() }
+                if ($ximage -ne $null) { $ximage.Dispose() }
+                if ($ms -ne $null) { $ms.Dispose() }
+                if ($original -ne $null) { $original.Dispose() }
             }
         }
     }
@@ -61,10 +84,10 @@ function Convert-ImageToPdf {
     end {
         if ($PdfDocument.PageCount -gt 0) {
             Write-Verbose "    Saving PDF"
-            $pdfDocument.Save($Path)
+            $pdfDocument.Save($Destination)
             $pdfDocument.Close()
         } else {
-            Write-Warning "    PDF $Path was not created as there were no valid pages."
+            Write-Warning "    PDF $Destination was not created as there were no valid pages."
         }
 
         $PdfDocument.Dispose()
