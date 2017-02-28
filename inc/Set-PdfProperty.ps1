@@ -54,7 +54,7 @@ function Set-PdfProperty {
         if ([string]::IsNullOrWhiteSpace($OutPath)) {
             $OutPath = $Path
         }
-        Write-Verbose "Setting PDF properties for $Path"
+        Write-Verbose "Setting PDF properties for $OutPath"
         if ($PdfDocument -eq $null) {
             try {
                 if (-not [string]::IsNullOrWhiteSpace($OwnerPassword)) {

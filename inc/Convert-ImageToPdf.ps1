@@ -8,8 +8,7 @@ function Convert-ImageToPdf {
     param (
         [Parameter(Mandatory=$true,
                    ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true,
-                   Position=0)]
+                   ValueFromPipelineByPropertyName=$true)]
         [string[]]$ImagePath,
         [Parameter(Mandatory=$true)]
         [string]$Path,
@@ -19,12 +18,20 @@ function Convert-ImageToPdf {
         [object]$CreationDate,
 		[string]$UserPassword,
 		[string]$OwnerPassword,
-        [hashtable]$CustomProperties
+        [hashtable]$CustomProperties,
+        [switch]$Force
     )
 
     begin {
-        Write-Verbose "Creating PDF $Path"
-        $PdfDocument = New-Object PdfSharp.Pdf.PdfDocument
+        $PdfDocument = $null
+        if (Test-Path $Path -and -not $Force) {
+            Write-Verbose "Appending PDF $Path"
+            $PdfDocument = Get-Pdf -Path $Path
+        }
+        else {
+            Write-Verbose "Creating PDF $Path"
+            $PdfDocument = New-Object PdfSharp.Pdf.PdfDocument
+        }
         $PdfDocument = Set-PdfProperty -PdfDocument $PdfDocument -Title:$Title -Author:$Author -Subject:$Subject -CreationDate:$CreationDate -UserPassword:$UserPassword -OwnerPassword:$OwnerPassword -CustomProperties:$CustomProperties
     }
 
@@ -34,7 +41,7 @@ function Convert-ImageToPdf {
                 Write-Warning "Image file not found $image"
                 continue
             }
-            Write-Verbose "    Adding image $image"
+            Write-Verbose "    Adding $image"
             $ximage = $null
             try {
                 $xgraphics  = [PdfSharp.Drawing.XGraphics]::FromPdfPage($PdfDocument.Pages.Add())
