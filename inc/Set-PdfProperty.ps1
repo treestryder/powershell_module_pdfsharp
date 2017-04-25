@@ -99,8 +99,7 @@ function Set-PdfProperty {
             # Add custom properties to PDF.
             if ($CustomProperties -ne $null) {
                 foreach ($key in $CustomProperties.Keys) {
-                    $pdfString = New-Object -TypeName PdfSharp.Pdf.PdfString -Argument $CustomProperties[$key]
-                    $PdfDocument.Info.Elements.Add('/' + $key, $pdfString)
+                    $PdfDocument.Info.Elements.SetString(('/' + $key), $CustomProperties[$key])
                 }
             }
         }
