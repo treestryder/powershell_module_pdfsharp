@@ -24,16 +24,25 @@ function Get-Pdf {
                 continue
             }
             Write-Verbose "Get-Pdf $p"
-          
+
+            $output = $null
             if (-not [string]::IsNullOrWhiteSpace($OwnerPassword)) {
-                [PdfSharp.Pdf.IO.PdfReader]::Open($Path, $OwnerPassword)
+                $output = [PdfSharp.Pdf.IO.PdfReader]::Open($Path, $OwnerPassword)
             }
             elseif (-not [string]::IsNullOrWhiteSpace($UserPassword)) {
-                [PdfSharp.Pdf.IO.PdfReader]::Open($Path, $UserPassword)
+                $output = [PdfSharp.Pdf.IO.PdfReader]::Open($Path, $UserPassword)
             }
             else {
-                [PdfSharp.Pdf.IO.PdfReader]::Open($Path)
+                $output = [PdfSharp.Pdf.IO.PdfReader]::Open($Path)
             }
+            if ($output -ne $null) {
+                Add-Member -InputObject $output -MemberType NoteProperty -Name InfoExpanded -Value @{}
+                $output.Info | ForEach-Object {
+                    $key = $_.Key -replace '^/',''
+                    $output.InfoExpanded[$key] = $_.Value.Value
+                }
+            }
+            Write-Output $output
         }
     }
 }
