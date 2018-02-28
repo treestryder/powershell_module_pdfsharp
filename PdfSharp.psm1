@@ -4,4 +4,4 @@ Set-StrictMode -Version Latest
 trap {}
 
 Add-Type -Path "$PSScriptRoot/PdfSharp/pdfsharp.dll"
-Get-ChildItem "$PSScriptRoot/inc/*.ps1" | foreach { . $_ }
+Get-ChildItem "$PSScriptRoot/inc/*.ps1" | ForEach-Object { . $_ }

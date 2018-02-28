@@ -1,6 +1,8 @@
 <#
 .Synopsis
     Uses the PDFSharp framework to produce a PDF file from one or more image files.
+.Notes
+    The method [PdfSharp.Drawing.XImage]::FromStream() will not run in the Powershell ISE.
 #>
 function Convert-ImageToPdf {
     [CmdletBinding()]
@@ -9,9 +11,9 @@ function Convert-ImageToPdf {
         [Parameter(Mandatory=$true,
                    ValueFromPipeline=$true,
                    ValueFromPipelineByPropertyName=$true)]
-        [string[]]$Path,
+        [object[]]$Path,
         [Parameter(Mandatory=$true)]
-        [string]$Destination,
+        [object]$Destination,
         [string]$Title,
         [string]$Author,
         [string]$Subject,
@@ -25,8 +27,9 @@ function Convert-ImageToPdf {
     begin {
         Add-Type -AssemblyName System.Drawing
         $PdfDocument = $null
+        if ($Destination -is [System.IO.FileInfo]) { $Destination = $Destination.FullName }
         if ((Test-Path $Destination) -and -not $Force) {
-            Write-Verbose "Appending PDF $Destination"
+            Write-Verbose "Appending to PDF $Destination"
             $PdfDocument = Get-Pdf -Path $Destination
         }
         else {
@@ -38,14 +41,15 @@ function Convert-ImageToPdf {
 
     process {
         foreach ($image in $Path) {
+            if ($image -is [System.IO.DirectoryInfo]) { continue }
+            if ($image -is [System.IO.FileInfo]) { $image = $image.FullName }
+            Write-Debug $image
             if (-not (Test-Path $image)) {
-                Write-Warning "Image file not found $image"
+                Write-Warning "Image file not found: $image"
                 continue
             }
             
             $ximage = $null
-
-
             $original = $null
             $xgraphics = $null
             $ximage = $null
@@ -87,7 +91,7 @@ function Convert-ImageToPdf {
             $pdfDocument.Save($Destination)
             $pdfDocument.Close()
         } else {
-            Write-Warning "    PDF $Destination was not created as there were no valid pages."
+            Write-Warning "PDF $Destination was not created as there were no valid pages."
         }
 
         $PdfDocument.Dispose()
