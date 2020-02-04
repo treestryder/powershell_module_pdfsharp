@@ -40,7 +40,7 @@ function Unprotect-PDF {
                     $document.Save($file)
                 }
                 catch {
-                    throw "Error removing password from $file : $_"
+                    Write-Error "Error removing password from $file : $_"
                 }
             }
         }
